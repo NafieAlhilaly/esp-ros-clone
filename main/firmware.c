@@ -15,12 +15,20 @@
 #include "driver/uart.h"
 #include "driver/gpio.h"
 
-
 static const char *TAG = "firmware";
 static const int RX_BUF_SIZE = 1024;
 
 #define TXD_PIN (GPIO_NUM_4)
 #define RXD_PIN (GPIO_NUM_5)
+
+#define ARDUINO_FAN_PIN (GPIO_NUM_2)
+#define STM32_FAN_PIN (GPIO_NUM_4)
+
+void setup_device_fan_gpio(int fan_pin)
+{
+    gpio_reset_pin(fan_pin);
+    gpio_set_direction(fan_pin, GPIO_MODE_OUTPUT);
+}
 
 void setup_uart(void)
 {
@@ -93,9 +101,10 @@ void app_main(void)
     ESP_LOGI(TAG, "Creating UART RX task");
     xTaskCreate(uart_rx_task, "uart_rx_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
 
+    setup_device_fan_gpio(ARDUINO_FAN_PIN);
+    setup_device_fan_gpio(STM32_FAN_PIN);
     while (1)
     {
-        ESP_LOGI(TAG, "Looping ...");
-        vTaskDelay(pdMS_TO_TICKS(3000));
+        
     }
 }
