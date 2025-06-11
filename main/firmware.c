@@ -17,6 +17,7 @@
 
 static const char *TAG = "firmware";
 static const int RX_BUF_SIZE = 1024;
+static esp_mqtt_client_handle_t client = NULL;
 
 #define TXD_PIN (GPIO_NUM_4)
 #define RXD_PIN (GPIO_NUM_5)
@@ -45,7 +46,7 @@ void setup_uart(void)
     uart_set_pin(UART_NUM_1, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 }
 
-esp_mqtt_client_handle_t setup_mqtt_client(void)
+void setup_mqtt_client(void)
 {
     /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
     * Read "Establishing Wi-Fi or Ethernet Connection" section in
@@ -56,14 +57,12 @@ esp_mqtt_client_handle_t setup_mqtt_client(void)
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = CONFIG_BROKER_URL,
     };
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
+    client = esp_mqtt_client_init(&mqtt_cfg);
 
     esp_mqtt_client_start(client);
-
-    return client;
 }
 
-static void uart_rx_task(void *arg)
+void uart_arduino_rx_task(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK";
     esp_log_level_set(RX_TASK_TAG, ESP_LOG_INFO);
@@ -74,6 +73,7 @@ static void uart_rx_task(void *arg)
             data[rxBytes] = 0;
             ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
             ESP_LOG_BUFFER_HEXDUMP(RX_TASK_TAG, data, rxBytes, ESP_LOG_INFO);
+            esp_mqtt_client_publish(client, "/devices/arduino_uno_r3/teperature", (char *)data, 0, 0, 0);
         }
     }
     free(data);
@@ -89,7 +89,7 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    esp_mqtt_client_handle_t client = setup_mqtt_client();
+    setup_mqtt_client();
     if (client == NULL)
     {
         ESP_LOGE(TAG, "Failed to create MQTT client");
@@ -99,7 +99,7 @@ void app_main(void)
     ESP_LOGI(TAG, "Set up UART");
     setup_uart();
     ESP_LOGI(TAG, "Creating UART RX task");
-    xTaskCreate(uart_rx_task, "uart_rx_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
+    xTaskCreate(uart_arduino_rx_task, "uart_arduino_rx_task", 1024 * 2, NULL, configMAX_PRIORITIES - 1, NULL);
 
     setup_device_fan_gpio(ARDUINO_FAN_PIN);
     setup_device_fan_gpio(STM32_FAN_PIN);
