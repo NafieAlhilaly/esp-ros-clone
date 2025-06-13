@@ -20,6 +20,13 @@ def on_message(client, userdata, msg):
     store(DeviceTemperature(device_id=device_id, temperature=temperature))
     if temperature > TEMP_THRESHOLD:
         client.publish(f"/hot_devices/{device_id}/temperature", temperature, qos=1)
+    with open("fan_power_status.json", "r") as file:
+        fans_status = loads(file.read())
+    if device_id + "_fan" in fans_status:
+        if fans_status[device_id + "_fan"] == "on":
+            fans_status[device_id + "_fan"] = "off"
+            with open("fan_power_status.json", "w") as file:
+                file.write(dumps(fans_status))
 
 mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect

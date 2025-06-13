@@ -3,6 +3,11 @@
 *.pyc
 sdkconfig
 
+/services/venv
+*/__pycache__/
+device_temperatures.csv
+fan_power_status.json
+
 # gtags
 GTAGS
 GRTAGS
