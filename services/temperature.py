@@ -1,10 +1,10 @@
 import paho.mqtt.client as mqtt
 from os import environ
 from storage import store, DeviceTemperature
-from logging import getLogger, basicConfig, DEBUG
+from log import logger
+from json import loads, dumps
 
-logger = getLogger(__name__)
-basicConfig(level=DEBUG,format="{asctime} - {name} - {levelname} - {message}", style="{")
+logger.name = __file__.split('/')[-1]
 
 TEMP_THRESHOLD = int(environ.get("TEMP_THRESHOLD", 45))  # Temperature threshold for fan activation
 
